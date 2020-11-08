@@ -2,10 +2,8 @@ package server;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.EOFException;
 import java.io.IOException;
 import java.net.Socket;
-import java.net.SocketTimeoutException;
 
 public class ClientHandler {
 
@@ -95,10 +93,12 @@ public class ClientHandler {
                         // запрос на смену никнейма
                         if (str.startsWith("/changenick ")) {
                             String[] strUpdate = str.split(" ", 2);
-                            if (server.getAuthService().changeNickName(this.nickname, strUpdate[1])) {
+                            if (server.getAuthService().changeNickName(this.nickname, strUpdate[1].trim())) {
                                 server.sendMsgToReceiver(this, this.nickname,
-                                        "** Вы сменили никнейм на " + strUpdate[1] + "**");
+                                        "** Вы сменили никнейм на " + strUpdate[1].trim() + "**");
+                                nickname = strUpdate[1].trim();
                                 server.broadcastClientList();
+                                out.writeUTF("/changenick "+strUpdate[1].trim());
                             } else {
                                 server.sendMsgToReceiver(this, this.nickname,
                                         "** Сменить никнейм не удалось, \n возможно такой никнейм занят **");
