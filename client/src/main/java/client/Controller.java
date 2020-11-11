@@ -137,6 +137,11 @@ public class Controller implements Initializable {
                             if (str.equals("/end")) {
                                 break;
                             }
+                            if(str.startsWith("/changenick ")){
+                                String[] token = str.split("\\s",2);
+                                setTitle(String.format("[ %s ] - Балабол", token[1]));
+                            }
+
                             if (str.startsWith("/clientlist ")) {
                                 String[] token = str.split("\\s");
                                 System.out.println(Arrays.toString(token));

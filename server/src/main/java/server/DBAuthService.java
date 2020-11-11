@@ -1,8 +1,6 @@
 package server;
 
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.List;
 
 public class DBAuthService implements AuthService {
 
@@ -83,6 +81,4 @@ public class DBAuthService implements AuthService {
         }
         return true;
     }
-
-
 }

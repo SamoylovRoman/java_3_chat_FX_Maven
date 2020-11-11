@@ -112,6 +112,6 @@ public class Server {
         for (ClientHandler c : clients) {
             c.sendMsg(message);
         }
-        System.out.println("Список клиентов: " + message);
+        System.out.println("Отправляеем Список клиентов: " + sb.toString());
     }
 }
