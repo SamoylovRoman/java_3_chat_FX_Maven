@@ -16,13 +16,15 @@ import javafx.scene.layout.HBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.EOFException;
-import java.io.IOException;
+import java.io.*;
 import java.net.Socket;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
+import java.util.List;
 import java.util.ResourceBundle;
 
 public class Controller implements Initializable {
@@ -55,6 +57,9 @@ public class Controller implements Initializable {
     private boolean authenticated;
     private String nickname;
 
+    private static String HISTORIES_DIRECTORY = "client/src/main/resources/histories/";
+    private static int COUNT_OF_HISTORY_LINES = 15;
+
     private void setAuthenticated(boolean authenticated) {
         this.authenticated = authenticated;
         authPanel.setVisible(!authenticated);
@@ -70,6 +75,8 @@ public class Controller implements Initializable {
             setTitle("Балабол");
         } else {
             setTitle(String.format("[ %s ] - Балабол", nickname));
+
+//            loadHistory(loginField.getText());
         }
         textArea.clear();
     }
@@ -111,6 +118,7 @@ public class Controller implements Initializable {
                         if (str.startsWith("/authok ")) {
                             nickname = str.split("\\s")[1];
                             setAuthenticated(true);
+                            loadHistory(loginField.getText());
                             break;
                         }
                         // доработка (тайм аут соединения)
@@ -137,8 +145,8 @@ public class Controller implements Initializable {
                             if (str.equals("/end")) {
                                 break;
                             }
-                            if(str.startsWith("/changenick ")){
-                                String[] token = str.split("\\s",2);
+                            if (str.startsWith("/changenick ")) {
+                                String[] token = str.split("\\s", 2);
                                 setTitle(String.format("[ %s ] - Балабол", token[1]));
                             }
 
@@ -154,6 +162,7 @@ public class Controller implements Initializable {
                             }
                         } else {
                             textArea.appendText(str + "\n");
+                            saveRowOfHistory(loginField.getText(), str + "\n");
                         }
                     }
                 }
@@ -249,6 +258,58 @@ public class Controller implements Initializable {
 
         try {
             out.writeUTF(msg);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // метод загрузки истории из файла
+    // если файла нет, то он создается
+    public void loadHistory(String login) {
+
+        // если файл истории не существует, то создаем его
+        File file = new File(HISTORIES_DIRECTORY + "history_[" +
+                login + "].txt");
+        if (!file.exists()) { //создаем новый файл истории
+            System.out.println("Такой файл не существует: " + file.toString());
+            try {
+                file.createNewFile();
+            } catch (IOException e) {
+                System.out.println("Не удалось создать файл истории");
+                e.printStackTrace();
+            }
+        }
+
+        // читаем строки из файла с помощью java.nio.file.Files.readAllLines()
+        try {
+            List<String> lines = Files.readAllLines(Paths.get(HISTORIES_DIRECTORY + "history_[" +
+                    login + "].txt"), StandardCharsets.UTF_8);
+
+            Platform.runLater(() -> { // зполняем textArea
+                if (COUNT_OF_HISTORY_LINES < lines.size()) {
+                    for (int i = lines.size() - COUNT_OF_HISTORY_LINES; i < lines.size(); i++) {
+                        textArea.appendText(lines.get(i) + "\n");
+                    }
+                } else {
+                    for (String line : lines) {
+                        textArea.appendText(line + "\n");
+                    }
+                }
+
+            });
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return;
+    }
+
+    //метод сохранения одной строки в файл
+    // если файл не найден, он создается
+    private void saveRowOfHistory(String login, String str) {
+        try {
+            Files.write(Paths.get(HISTORIES_DIRECTORY + "history_[" +
+                            login + "].txt"), str.getBytes(),
+                    StandardOpenOption.CREATE, StandardOpenOption.APPEND);
         } catch (IOException e) {
             e.printStackTrace();
         }
