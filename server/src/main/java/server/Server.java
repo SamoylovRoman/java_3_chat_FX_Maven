@@ -11,8 +11,11 @@ import java.util.List;
 import java.util.Scanner;
 import java.util.Vector;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.logging.Logger;
 
 public class Server {
+    private static final Logger logger = Logger.getLogger(Server.class.getName());
+
     private List<ClientHandler> clients;
     private AuthService authService;
 
@@ -27,6 +30,7 @@ public class Server {
 
         try {
             server = new ServerSocket(PORT);
+            logger.info("Server started");
             System.out.println("Server started");
 
 
@@ -37,14 +41,20 @@ public class Server {
 
         } catch (IOException e) {
             e.printStackTrace();
+            logger.info("Server starting error...");
+            System.out.println("Server starting error...");
         } finally {
+            DBAuthService.disconnect();
             try {
                 socket.close();
             } catch (IOException e) {
                 e.printStackTrace();
             }
             try {
+                logger.info("Server stopped");
+                System.out.println("Server stopped");
                 server.close();
+
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -113,5 +123,9 @@ public class Server {
             c.sendMsg(message);
         }
         System.out.println("Отправляеем Список клиентов: " + sb.toString());
+    }
+
+    public void sendHistory(ClientHandler receiver) {
+
     }
 }

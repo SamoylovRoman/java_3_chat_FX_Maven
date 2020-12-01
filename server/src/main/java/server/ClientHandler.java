@@ -4,8 +4,11 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.util.logging.Logger;
 
 public class ClientHandler {
+
+    private static final Logger logger = Logger.getLogger(ClientHandler.class.getName());
 
     public static int TIME_OUT_TIME = 300000;
 
@@ -23,13 +26,13 @@ public class ClientHandler {
 
     public ClientHandler(Server server, Socket socket) {
 
-
         try {
             this.server = server;
             this.socket = socket;
             in = new DataInputStream(socket.getInputStream());
             out = new DataOutputStream(socket.getOutputStream());
             System.out.println("Client connected" + socket.getRemoteSocketAddress());
+            logger.info("Client connected" + socket.getRemoteSocketAddress());
 
             new Thread(() -> {
                 try {
@@ -66,6 +69,7 @@ public class ClientHandler {
                                     nickname = newNick;
                                     sendMsg("/authok " + newNick);
                                     server.subscribe(this);
+//                                    server.getAuthService().loadHistory(login);
 //                                    System.out.println("Прошли подключение");
 //                                    socket.setSoTimeout(0);
 //                                    System.out.println("Обнулили ожидание");
@@ -82,7 +86,12 @@ public class ClientHandler {
                     //цикл работы
                     while (true) {
                         String str = in.readUTF();
-
+                        if (str.startsWith("/")) {
+                            logger.info("Client sent a command");
+                        }
+                        else {
+                            logger.info("Client sent a message");
+                        }
                         if (str.equals("/end")) {
                             System.out.println("Выходим");
                             out.writeUTF("/end");
@@ -93,12 +102,19 @@ public class ClientHandler {
                         // запрос на смену никнейма
                         if (str.startsWith("/changenick ")) {
                             String[] strUpdate = str.split(" ", 2);
+                            if (str.length() < 2) {
+                                continue;
+                            }
+                            if (strUpdate[1].contains(" ")) {
+                                sendMsg("** Никнэйм не может содержать пробелы**");
+                                continue;
+                            }
                             if (server.getAuthService().changeNickName(this.nickname, strUpdate[1].trim())) {
                                 server.sendMsgToReceiver(this, this.nickname,
                                         "** Вы сменили никнейм на " + strUpdate[1].trim() + "**");
                                 nickname = strUpdate[1].trim();
                                 server.broadcastClientList();
-                                out.writeUTF("/changenick "+strUpdate[1].trim());
+                                out.writeUTF("/changenick " + strUpdate[1].trim());
                             } else {
                                 server.sendMsgToReceiver(this, this.nickname,
                                         "** Сменить никнейм не удалось, \n возможно такой никнейм занят **");
@@ -129,6 +145,7 @@ public class ClientHandler {
                 } finally {
                     server.unsubscribe(this);
                     System.out.println("Client disconnected" + socket.getRemoteSocketAddress());
+                    logger.info("Client disconnected" + socket.getRemoteSocketAddress());
                     try {
                         socket.close();
                         in.close();
